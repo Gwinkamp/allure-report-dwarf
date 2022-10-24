@@ -10,7 +10,7 @@ class ReportGenerator:
 
     INPUT_DIR = None
     OUTPUT_DIR = None
-    GENERATE_COMMAND = None
+    GENERATE_COMMAND = str()
 
     @classmethod
     def setup(
@@ -24,16 +24,16 @@ class ReportGenerator:
         cls.GENERATE_COMMAND = f'{allure_path} generate -c {input_dirpath} -o {output_dirpath}'
 
     @classmethod
-    def _unpack_data(cls, filepath: str):
+    def _unpack_data(cls, filepath: str | Path):
         with ZipFile(filepath) as zipped_data:
             zipped_data.extractall(cls.INPUT_DIR)
 
     @staticmethod
-    def _clear_data(filepath: str):
+    def _clear_data(filepath: str | Path):
         os.remove(filepath)
 
     @classmethod
-    async def generate(cls, filepath: str):
+    async def generate(cls, filepath: str | Path):
         """Сгенерировать allure отчет из"""
         cls._unpack_data(filepath)
 

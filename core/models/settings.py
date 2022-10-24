@@ -7,7 +7,7 @@ from pydantic import BaseModel, BaseSettings
 class AllureReportConfig(BaseModel):
     host: str
     port: int
-    report_dirpath: str | None
+    report_dirpath: str | Path | None
 
 
 class AllureReceiverConfig(BaseModel):
@@ -17,8 +17,8 @@ class AllureReceiverConfig(BaseModel):
 
 
 class AllureConfig(BaseModel):
-    allure_path: str | None
-    results_dir: str | None
+    allure_path: str | Path | None
+    results_dir: str | Path | None
     report: AllureReportConfig
     receiver: AllureReceiverConfig
 
@@ -31,12 +31,12 @@ class SeafileConfig(BaseModel):
     allure_dirpath: str
 
 
-class Config(BaseSettings):
+class Settings(BaseSettings):
     allure: AllureConfig
     seafile: SeafileConfig
-    temp_dir: str | None
+    temp_dir: str | Path | None
 
-    def get_allure_path(self) -> str:
+    def get_allure_path(self) -> str | Path:
         if not self.allure.allure_path:
             self.allure.allure_path = 'allure'
         return self.allure.allure_path

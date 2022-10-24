@@ -1,13 +1,13 @@
 import shlex
 import asyncio
-from core.models import Config
+from core.models import Settings
 from .containers import Container
 from dependency_injector.wiring import Provide, inject
 
 
 @inject
-async def run_allure_report(config: Config = Provide[Container.config]):
-    args = shlex.split(f'{config.get_allure_path()} open {config.get_report_dir()}')
+async def run_allure_report(settings: Settings = Provide[Container.settings]):
+    args = shlex.split(f'{settings.get_allure_path()} open {settings.get_report_dir()}')
 
     process = await asyncio.create_subprocess_exec(
         *args,

@@ -1,6 +1,6 @@
 from .response import ReceiverResponse
-from .config import (
-    Config,
+from .settings import (
+    Settings,
     AllureConfig,
     AllureReportConfig,
     AllureReceiverConfig,

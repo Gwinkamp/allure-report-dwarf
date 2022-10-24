@@ -3,7 +3,7 @@ import aiofiles
 from uuid import uuid4
 from .containers import Container
 from .report_generator import ReportGenerator
-from core.models import Config, ReceiverResponse
+from core.models import Settings, ReceiverResponse
 from dependency_injector.wiring import Provide, inject
 from fastapi import (
     FastAPI,
@@ -23,7 +23,7 @@ async def upload_results(
         background_tasks: BackgroundTasks,
         response: Response,
         file: bytes = File(),
-        config: Config = Depends(Provide[Container.config]),
+        settings: Settings = Depends(Provide[Container.settings]),
         report_generator: ReportGenerator = Depends(Provide[Container.report_generator])
 ):
     if len(file) == 0:
@@ -33,7 +33,7 @@ async def upload_results(
             message='Получены пустые данные'
         )
 
-    temp_dir = config.get_temp_dir()
+    temp_dir = settings.get_temp_dir()
     zipped_filename = temp_dir / str(uuid4())
 
     async with aiofiles.open(zipped_filename, 'wb') as saved_file:
@@ -49,7 +49,7 @@ async def upload_results(
 
 @inject
 def run_receiver(
-        config: Config = Provide[Container.config],
+        config: Settings = Provide[Container.settings],
         report_generator: ReportGenerator = Provide[Container.report_generator]
 ):
     report_generator.setup(
