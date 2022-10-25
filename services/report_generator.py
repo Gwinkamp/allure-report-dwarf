@@ -70,7 +70,8 @@ class ReportGenerator:
             logger.error('ReportGenerator завершил свою работу с ошибками')
 
     @staticmethod
-    async def _log_process_output(stream: asyncio.StreamReader):
-        output = await stream.read()
-        if output:
-            logger.info(output.decode()[:-1])
+    async def _log_process_output(stream: asyncio.StreamReader | None):
+        if stream is not None:
+            output = await stream.read()
+            if output:
+                logger.info(output.decode()[:-1])

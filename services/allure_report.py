@@ -25,15 +25,17 @@ async def run_allure_report(settings: Settings = Provide[Container.settings]):
         stderr=asyncio.subprocess.PIPE
     )
 
-    for stdout_coroutine in iter(process.stdout.readline, ''):
-        stdout_line = await stdout_coroutine
-        if stdout_line:
-            logger.info(stdout_line.decode()[:-1])
+    if process.stdout:
+        for stdout_coroutine in iter(process.stdout.readline, ''):
+            stdout_line = await stdout_coroutine
+            if stdout_line:
+                logger.info(stdout_line.decode()[:-1])
 
-    for stderr_coroutine in iter(process.stderr.readline, ''):
-        stderr_line = await stderr_coroutine
-        if stderr_line:
-            logger.error(stderr_line.decode()[:-1])
+    if process.stderr:
+        for stderr_coroutine in iter(process.stderr.readline, ''):
+            stderr_line = await stderr_coroutine
+            if stderr_line:
+                logger.error(stderr_line.decode()[:-1])
 
     return_code = await process.wait()
 
@@ -48,8 +50,6 @@ async def restore_results(
         report_generator: ReportGenerator = Provide[Container.report_generator]
 ):
     """Восстановить результаты тестов из внешнего ФХД"""
-    await storage.authorize()
-
     restored = await storage.restore_results(settings.get_results_dir())
 
     if restored:

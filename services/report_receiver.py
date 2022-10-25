@@ -40,7 +40,7 @@ async def upload_results(
     zipped_filename = str(uuid4()) + '.zip'
 
     background_tasks.add_task(report_generator.generate_from_package, file)
-    background_tasks.add_task(storage.save_results, zipped_filename, file)
+    background_tasks.add_task(storage.save_results_package, zipped_filename, file)
 
     return ReceiverResponse(
         success=True,
