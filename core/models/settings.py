@@ -13,7 +13,6 @@ class AllureReportConfig(BaseModel):
 class AllureReceiverConfig(BaseModel):
     host: str
     port: int
-    log_level: str
 
 
 class AllureConfig(BaseModel):
@@ -34,18 +33,11 @@ class SeafileConfig(BaseModel):
 class Settings(BaseSettings):
     allure: AllureConfig
     seafile: SeafileConfig
-    temp_dir: str | Path | None
 
     def get_allure_path(self) -> str | Path:
         if not self.allure.allure_path:
             self.allure.allure_path = 'allure'
         return self.allure.allure_path
-
-    def get_temp_dir(self) -> Path:
-        if not self.temp_dir:
-            self.temp_dir = config.DEFAULT_TEMP_DIR
-            self._create_dir_if_not_exists(self.temp_dir)
-        return Path(self.temp_dir)
 
     def get_results_dir(self) -> Path:
         if not self.allure.results_dir:
