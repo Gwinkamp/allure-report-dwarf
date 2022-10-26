@@ -1,8 +1,10 @@
-from core.models import Settings
+from models import Settings
 from cachetools import TTLCache
 from datetime import datetime, timedelta
-from services.report_generator import ReportGenerator
-from services.storage_client import StorageClient
+from services import ReportGenerator
+from services import StorageClient
+from services import AllureReport
+from services import ReceiverApi
 from dependency_injector import containers, providers
 
 
@@ -27,3 +29,17 @@ class Container(containers.DeclarativeContainer):
     )
 
     storage = providers.AbstractFactory(StorageClient)
+
+    allure_report = providers.Singleton(
+        AllureReport,
+        settings=settings,
+        storage=storage,
+        report_generator=report_generator
+    )
+
+    receiver_api = providers.Singleton(
+        ReceiverApi,
+        settings=settings,
+        storage=storage,
+        report_generator=report_generator
+    )

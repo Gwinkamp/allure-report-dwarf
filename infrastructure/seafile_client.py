@@ -2,7 +2,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 from cachetools import Cache
-from core.models import Settings
+from models import Settings
 from services.storage_client import StorageClient
 from aseafile import SeafileHttpClient, SeaResult, FileItem
 

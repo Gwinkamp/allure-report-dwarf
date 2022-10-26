@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from core.models import Settings
+from models import Settings
 from abc import ABCMeta, abstractmethod
 
 

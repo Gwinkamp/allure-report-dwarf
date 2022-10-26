@@ -3,7 +3,7 @@ import shlex
 import asyncio
 from io import BytesIO
 from zipfile import ZipFile
-from core.models import Settings
+from models import Settings
 
 logger = logging.getLogger(__name__)
 

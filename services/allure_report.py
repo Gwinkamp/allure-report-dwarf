@@ -1,59 +1,64 @@
 import logging
 import shlex
 import asyncio
-from core.models import Settings
-from .containers import Container
+from models import Settings
 from .storage_client import StorageClient
 from .report_generator import ReportGenerator
-from dependency_injector.wiring import Provide, inject
-
-logger = logging.getLogger(__name__)
 
 
-@inject
-async def run_allure_report(settings: Settings = Provide[Container.settings]):
-    await restore_results(settings)
+class AllureReport:
+    """Класс, инкапсулирующий методы для управления Allure Report"""
 
-    args = shlex.split(f'{settings.get_allure_path()} open '
-                       f'-h {settings.allure.report.host} '
-                       f'-p {settings.allure.report.port} '
-                       f'{settings.get_report_dir()}')
+    def __init__(
+            self,
+            settings: Settings,
+            storage: StorageClient,
+            report_generator: ReportGenerator):
+        self._settings = settings
+        self._storage = storage
+        self._report_generator = report_generator
+        self._run_command = self._create_run_command()
+        self._logger = logging.getLogger(__name__)
 
-    process = await asyncio.create_subprocess_exec(
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
+    def _create_run_command(self):
+        return f'{self._settings.get_allure_path()} open ' + \
+               f'-h {self._settings.allure.report.host} ' + \
+               f'-p {self._settings.allure.report.port} ' + \
+               f'{self._settings.get_report_dir()}'
 
-    if process.stdout:
-        for stdout_coroutine in iter(process.stdout.readline, ''):
-            stdout_line = await stdout_coroutine
-            if stdout_line:
-                logger.info(stdout_line.decode()[:-1])
+    async def run_allure_report(self):
+        """Запустить Allure Report"""
+        args = shlex.split(self._run_command)
 
-    if process.stderr:
-        for stderr_coroutine in iter(process.stderr.readline, ''):
-            stderr_line = await stderr_coroutine
-            if stderr_line:
-                logger.error(stderr_line.decode()[:-1])
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
 
-    return_code = await process.wait()
+        if process.stdout:
+            for stdout_coroutine in iter(process.stdout.readline, ''):
+                stdout_line = await stdout_coroutine
+                if stdout_line:
+                    self._logger.info(stdout_line.decode()[:-1])
 
-    if return_code:
-        logger.critical('Allure Report прекратил свою работу')
+        if process.stderr:
+            for stderr_coroutine in iter(process.stderr.readline, ''):
+                stderr_line = await stderr_coroutine
+                if stderr_line:
+                    self._logger.error(stderr_line.decode()[:-1])
 
+        return_code = await process.wait()
 
-@inject
-async def restore_results(
-        settings: Settings,
-        storage: StorageClient = Provide[Container.storage],
-        report_generator: ReportGenerator = Provide[Container.report_generator]
-):
-    """Восстановить результаты тестов из внешнего ФХД"""
-    restored = await storage.restore_results(settings.get_results_dir())
+        if return_code:
+            self._logger.critical('Allure Report прекратил свою работу')
 
-    if restored:
-        await report_generator.generate()
-        logger.info('Результаты успешно восстановлены.')
-    else:
-        logger.info('Восстановление результатов не было произведено.')
+    async def restore_results(self):
+        """Восстановить результаты тестов из внешнего ФХД"""
+        restored = await self._storage.restore_results(self._settings.get_results_dir())
+
+        if restored:
+            await self._report_generator.generate()
+            self._logger.info('Результаты успешно восстановлены.')
+        else:
+            self._logger.info('Восстановление результатов не было произведено.')

@@ -1,15 +1,11 @@
 import uvicorn
 import config
-import logging.config
 from uuid import uuid4
-from .containers import Container
-from .report_generator import ReportGenerator
-from .storage_client import StorageClient
-from core.models import Settings, ReceiverResponse
-from dependency_injector.wiring import Provide, inject
+from models import Settings, ReceiverResponse
+from services import StorageClient, ReportGenerator
 from fastapi import (
     FastAPI,
-    Depends,
+    APIRouter,
     Response,
     File,
     status,
@@ -17,42 +13,55 @@ from fastapi import (
 )
 
 
-logger = logging.getLogger(__name__)
-receiver = FastAPI()
+class ReceiverApi:
 
+    def __init__(
+            self,
+            settings: Settings,
+            storage: StorageClient,
+            report_generator: ReportGenerator):
+        self._settings = settings
+        self._storage = storage
+        self._report_generator = report_generator
+        self._api = FastAPI()
+        self._router = APIRouter()
+        self._register_endpoints(self._router)
+        self._api.include_router(self._router)
 
-@receiver.post("/upload_results")
-@inject
-async def upload_results(
-        background_tasks: BackgroundTasks,
-        response: Response,
-        file: bytes = File(),
-        storage: StorageClient = Depends(Provide[Container.storage]),
-        report_generator: ReportGenerator = Depends(Provide[Container.report_generator])
-):
-    if len(file) == 0:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return ReceiverResponse(
-            success=False,
-            message='Получены пустые данные'
+    def _register_endpoints(self, router: APIRouter):
+        router.add_api_route(
+            path='/upload_results',
+            endpoint=self.upload_results,
+            methods=['POST']
         )
 
-    zipped_filename = str(uuid4()) + '.zip'
+    async def upload_results(
+            self,
+            background_tasks: BackgroundTasks,
+            response: Response,
+            file: bytes = File(),
+    ):
+        if len(file) == 0:
+            response.status_code = status.HTTP_400_BAD_REQUEST
+            return ReceiverResponse(
+                success=False,
+                message='Получены пустые данные'
+            )
 
-    background_tasks.add_task(report_generator.generate_from_package, file)
-    background_tasks.add_task(storage.save_results_package, zipped_filename, file)
+        zipped_filename = str(uuid4()) + '.zip'
 
-    return ReceiverResponse(
-        success=True,
-        message='Результаты успешно сохранены. Отчет будет сгенерирован фоновой задачей'
-    )
+        background_tasks.add_task(self._report_generator.generate_from_package, file)
+        background_tasks.add_task(self._storage.save_results_package, zipped_filename, file)
 
+        return ReceiverResponse(
+            success=True,
+            message='Результаты успешно сохранены. Отчет будет сгенерирован фоновой задачей'
+        )
 
-@inject
-def run_receiver(settings: Settings = Provide[Container.settings]):
-    uvicorn.run(
-        receiver,
-        host=settings.allure.receiver.host,
-        port=settings.allure.receiver.port,
-        log_config=config.logging_config_file
-    )
+    def run(self):
+        uvicorn.run(
+            self._api,
+            host=self._settings.allure.receiver.host,
+            port=self._settings.allure.receiver.port,
+            log_config=config.logging_config_file
+        )
