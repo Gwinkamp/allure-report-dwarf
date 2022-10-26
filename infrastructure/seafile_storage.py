@@ -3,17 +3,28 @@ from pathlib import Path
 from zipfile import ZipFile
 from cachetools import Cache
 from models import Settings
-from services.storage_client import StorageClient
+from services.storage import Storage
 from aseafile import SeafileHttpClient, SeaResult, FileItem
 
 
-class SeafileClient(StorageClient):
+class SeafileStorage(Storage):
     """Класс, инкапсулирующий методы взаимодействия с Seafile"""
 
-    def __init__(self, settings: Settings, cache: Cache):
-        super().__init__(settings)
+    DEFAULT_BASE_URL = 'http://localhost'
+
+    def __init__(self, settings: Settings, cache: Cache, *args, **kwargs):
+        super().__init__(settings, *args, **kwargs)
         self._cache = cache
-        self._seafile = SeafileHttpClient(settings.seafile.url)
+        base_url = self._settings.url or self.DEFAULT_BASE_URL
+        self._seafile = SeafileHttpClient(base_url)
+
+    @property
+    def repo_id(self) -> str | None:
+        return self._settings.repo_id or self._cache.get('repo_id', None)
+
+    @repo_id.setter
+    def repo_id(self, value: str):
+        self._cache['repo_id'] = value
 
     @property
     def token(self) -> str:
@@ -30,8 +41,8 @@ class SeafileClient(StorageClient):
             await self._obtain_token()
 
         response = await self._seafile.upload(
-            repo_id=self._config.allure_repo,
-            dir_path=self._config.allure_dirpath,
+            repo_id=self.repo_id or await self._get_default_repo(),
+            dir_path=self._settings.dirpath,
             filename=package_name,
             payload=buffer,
             token=self.token
@@ -47,13 +58,13 @@ class SeafileClient(StorageClient):
         if not self.token:
             await self._obtain_token()
 
-        pakages = await self._get_all_packages()
+        packages = await self._get_all_packages()
 
-        if not pakages:
+        if not packages:
             self._logger.warning('Пакеты с результатами отсутствуют')
             return False
 
-        for package in pakages:
+        for package in packages:
             package_content = await self._download_package(package)
 
             if not package_content:
@@ -68,19 +79,32 @@ class SeafileClient(StorageClient):
         return True
 
     async def _obtain_token(self):
-        result = await self._seafile.obtain_auth_token(self._config.username, self._config.password)
+        result = await self._seafile.obtain_auth_token(self._settings.username, self._settings.password)
         if not result.success:
-            self._logger.error(
+            raise Exception(
                 'Не удалось получить токен в сервисе seafile. '
                 f'Причина: {self._create_error_message(result)}'
             )
-            return
         self.token = result.content.token
+
+    async def _get_default_repo(self):
+        result = await self._seafile.get_default_repo(self.token)
+        if not result.success:
+            raise Exception(
+                'Не удалось получить репозиторий по-умолчанию. '
+                f'Причина: {self._create_error_message(result)}'
+            )
+
+        if result.content:
+            self.repo_id = result.content
+            return result.content
+        else:
+            raise Exception('Не удалось получить репозиторий по-умолчанию. Пустое значение')
 
     async def _get_all_packages(self):
         result = await self._seafile.get_files(
-            repo_id=self._config.allure_repo,
-            path=self._config.allure_dirpath,
+            repo_id=self.repo_id or await self._get_default_repo(),
+            path=self._settings.dirpath,
             token=self.token
         )
 
@@ -92,8 +116,8 @@ class SeafileClient(StorageClient):
 
     async def _download_package(self, package: FileItem):
         result = await self._seafile.download(
-            repo_id=self._config.allure_repo,
-            filepath=package.name,
+            repo_id=self.repo_id or await self._get_default_repo(),
+            filepath=self._build_seafile_path(self._settings.dirpath, package.name),
             token=self.token
         )
 
@@ -103,11 +127,21 @@ class SeafileClient(StorageClient):
 
         return result.content
 
-    def _unzip_data(self, zipped_data: bytes, target_dir: str | Path):
+    @staticmethod
+    def _unzip_data(zipped_data: bytes, target_dir: str | Path):
         with ZipFile(BytesIO(zipped_data)) as zf:
             zf.extractall(target_dir)
 
-    def _create_error_message(self, result: SeaResult):
+    @staticmethod
+    def _create_error_message(result: SeaResult):
         if result.errors:
             return 'Ошибки: ' + '\n'.join(f'{error.title}: {error.message}' for error in result.errors)
         return
+
+    @staticmethod
+    def _build_seafile_path(dirpath: str, filename: str):
+        if dirpath.endswith('/'):
+            return dirpath + filename
+        else:
+            return dirpath + '/' + filename
+

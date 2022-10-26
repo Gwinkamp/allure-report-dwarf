@@ -4,11 +4,11 @@ from models import Settings
 from abc import ABCMeta, abstractmethod
 
 
-class StorageClient(metaclass=ABCMeta):
-    """Класс, инкапсулирующий методы взаимодействия с внешним ФХД"""
+class Storage(metaclass=ABCMeta):
+    """Класс, инкапсулирующий методы взаимодействия с ФХД"""
 
-    def __init__(self, settings: Settings):
-        self._config = settings.seafile
+    def __init__(self, settings: Settings, *args, **kwargs):
+        self._settings = settings.storage
         self._logger = logging.getLogger(__name__)
 
     @abstractmethod

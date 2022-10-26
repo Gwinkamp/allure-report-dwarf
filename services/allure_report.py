@@ -2,7 +2,7 @@ import logging
 import shlex
 import asyncio
 from models import Settings
-from .storage_client import StorageClient
+from .storage import Storage
 from .report_generator import ReportGenerator
 
 
@@ -12,7 +12,7 @@ class AllureReport:
     def __init__(
             self,
             settings: Settings,
-            storage: StorageClient,
+            storage: Storage,
             report_generator: ReportGenerator):
         self._settings = settings
         self._storage = storage

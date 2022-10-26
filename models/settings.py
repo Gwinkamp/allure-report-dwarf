@@ -1,7 +1,13 @@
 import os
 import config
 from pathlib import Path
+from enums import StorageType
 from pydantic import BaseModel, BaseSettings
+
+
+def _create_dir_if_not_exists(dirpath: str | Path):
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
 
 
 class AllureReportConfig(BaseModel):
@@ -22,17 +28,18 @@ class AllureConfig(BaseModel):
     receiver: AllureReceiverConfig
 
 
-class SeafileConfig(BaseModel):
-    url: str
-    username: str
-    password: str
-    allure_repo: str
-    allure_dirpath: str
+class StorageConfig(BaseModel):
+    type: StorageType
+    dirpath: str
+    url: str | None
+    username: str | None
+    password: str | None
+    repo_id: str | None
 
 
 class Settings(BaseSettings):
     allure: AllureConfig
-    seafile: SeafileConfig
+    storage: StorageConfig
 
     def get_allure_path(self) -> str | Path:
         if not self.allure.allure_path:
@@ -42,18 +49,14 @@ class Settings(BaseSettings):
     def get_results_dir(self) -> Path:
         if not self.allure.results_dir:
             self.allure.results_dir = config.DEFAULT_ALLURE_RESULTS_DIRPATH
-            self._create_dir_if_not_exists(self.allure.results_dir)
+            _create_dir_if_not_exists(self.allure.results_dir)
         return Path(self.allure.results_dir)
 
     def get_report_dir(self) -> Path:
         if not self.allure.report.report_dirpath:
             self.allure.report.report_dirpath = config.DEFAULT_ALLURE_REPORT_DIRPATH
-            self._create_dir_if_not_exists(self.allure.report.report_dirpath)
+            _create_dir_if_not_exists(self.allure.report.report_dirpath)
         return Path(self.allure.report.report_dirpath)
-
-    def _create_dir_if_not_exists(self, dirpath: str | Path):
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
 
     class Config:
         env_nested_delimiter = '__'

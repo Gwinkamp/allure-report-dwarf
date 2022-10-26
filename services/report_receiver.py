@@ -2,7 +2,7 @@ import uvicorn
 import config
 from uuid import uuid4
 from models import Settings, ReceiverResponse
-from services import StorageClient, ReportGenerator
+from services import Storage, ReportGenerator
 from fastapi import (
     FastAPI,
     APIRouter,
@@ -18,7 +18,7 @@ class ReceiverApi:
     def __init__(
             self,
             settings: Settings,
-            storage: StorageClient,
+            storage: Storage,
             report_generator: ReportGenerator):
         self._settings = settings
         self._storage = storage
