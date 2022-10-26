@@ -5,8 +5,6 @@ from io import BytesIO
 from zipfile import ZipFile
 from models import Settings
 
-logger = logging.getLogger(__name__)
-
 
 class ReportGenerator:
     """Генератор allure отчета"""
@@ -15,6 +13,7 @@ class ReportGenerator:
         self.input_dir = settings.get_results_dir()
         self.output_dir = settings.get_report_dir()
         self.generate_command = f'{settings.get_allure_path()} generate -c {self.input_dir} -o {self.output_dir}'
+        self._logger = logging.getLogger(__name__)
 
     def _unpack_data(self, data: bytes):
         with ZipFile(BytesIO(data)) as zipped_data:
@@ -37,7 +36,7 @@ class ReportGenerator:
         return_code = await process.wait()
 
         if return_code != 0:
-            logger.error('ReportGenerator завершил свою работу с ошибками')
+            self._logger.error('ReportGenerator завершил свою работу с ошибками')
 
     async def generate(self):
         """Сгенерировать allure отчет"""
@@ -54,11 +53,10 @@ class ReportGenerator:
         return_code = await process.wait()
 
         if return_code != 0:
-            logger.error('ReportGenerator завершил свою работу с ошибками')
+            self._logger.error('ReportGenerator завершил свою работу с ошибками')
 
-    @staticmethod
-    async def _log_process_output(stream: asyncio.StreamReader | None):
+    async def _log_process_output(self, stream: asyncio.StreamReader | None):
         if stream is not None:
             output = await stream.read()
             if output:
-                logger.info(output.decode()[:-1])
+                self._logger.info(output.decode()[:-1])

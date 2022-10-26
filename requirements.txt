@@ -3,6 +3,7 @@ aiosignal==1.2.0
 anyio==3.6.2
 aseafile==0.1.6a0
 async-timeout==4.0.2
+asynclog==0.1.7
 attrs==22.1.0
 cachetools==5.2.0
 charset-normalizer==2.1.1

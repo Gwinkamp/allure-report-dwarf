@@ -57,7 +57,8 @@ class SeafileClient(StorageClient):
             package_content = await self._download_package(package)
 
             if not package_content:
-                return
+                self._logger.error(f'Не удалось распаковать пакет {package.name}. Содержимое отсутствует')
+                continue
 
             try:
                 self._unzip_data(package_content, restore_dir)
