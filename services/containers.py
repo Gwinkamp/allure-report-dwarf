@@ -21,6 +21,9 @@ class Container(containers.DeclarativeContainer):
         timer=datetime.now
     )
 
-    report_generator = providers.Singleton(ReportGenerator)
+    report_generator = providers.Singleton(
+        ReportGenerator,
+        settings=settings
+    )
 
     storage = providers.AbstractFactory(StorageClient)

@@ -2,8 +2,8 @@ import logging
 import shlex
 import asyncio
 from io import BytesIO
-from pathlib import Path
 from zipfile import ZipFile
+from core.models import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -11,58 +11,45 @@ logger = logging.getLogger(__name__)
 class ReportGenerator:
     """Генератор allure отчета"""
 
-    INPUT_DIR = None
-    OUTPUT_DIR = None
-    GENERATE_COMMAND = str()
+    def __init__(self, settings: Settings):
+        self.input_dir = settings.get_results_dir()
+        self.output_dir = settings.get_report_dir()
+        self.generate_command = f'{settings.get_allure_path()} generate -c {self.input_dir} -o {self.output_dir}'
 
-    @classmethod
-    def setup(
-            cls,
-            allure_path: Path | str,
-            input_dirpath: Path,
-            output_dirpath: Path
-    ):
-        cls.INPUT_DIR = input_dirpath
-        cls.OUTPUT_DIR = output_dirpath
-        cls.GENERATE_COMMAND = f'{allure_path} generate -c {input_dirpath} -o {output_dirpath}'
-
-    @classmethod
-    def _unpack_data(cls, data: bytes):
+    def _unpack_data(self, data: bytes):
         with ZipFile(BytesIO(data)) as zipped_data:
-            zipped_data.extractall(cls.INPUT_DIR)
+            zipped_data.extractall(self.input_dir)
 
-    @classmethod
-    async def generate_from_package(cls, package_data: bytes):
+    async def generate_from_package(self, package_data: bytes):
         """Сгенерировать allure отчет из пакета с результатами"""
-        cls._unpack_data(package_data)
+        self._unpack_data(package_data)
 
-        args = shlex.split(cls.GENERATE_COMMAND)
+        args = shlex.split(self.generate_command)
         process = await asyncio.create_subprocess_exec(
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        await cls._log_process_output(process.stdout)
-        await cls._log_process_output(process.stderr)
+        await self._log_process_output(process.stdout)
+        await self._log_process_output(process.stderr)
 
         return_code = await process.wait()
 
         if return_code != 0:
             logger.error('ReportGenerator завершил свою работу с ошибками')
 
-    @classmethod
-    async def generate(cls):
+    async def generate(self):
         """Сгенерировать allure отчет"""
-        args = shlex.split(cls.GENERATE_COMMAND)
+        args = shlex.split(self.generate_command)
         process = await asyncio.create_subprocess_exec(
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        await cls._log_process_output(process.stdout)
-        await cls._log_process_output(process.stderr)
+        await self._log_process_output(process.stdout)
+        await self._log_process_output(process.stderr)
 
         return_code = await process.wait()
 

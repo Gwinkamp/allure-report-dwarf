@@ -49,16 +49,7 @@ async def upload_results(
 
 
 @inject
-def run_receiver(
-        settings: Settings = Provide[Container.settings],
-        report_generator: ReportGenerator = Provide[Container.report_generator]
-):
-    report_generator.setup(
-        allure_path=settings.get_allure_path(),
-        input_dirpath=settings.get_results_dir(),
-        output_dirpath=settings.get_report_dir()
-    )
-
+def run_receiver(settings: Settings = Provide[Container.settings]):
     uvicorn.run(
         receiver,
         host=settings.allure.receiver.host,
