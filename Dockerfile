@@ -1,5 +1,5 @@
 # Окружение находится в Dockerfile.env
-FROM allure-env
+FROM gwinkamp/allure-report-dwarf-env:latest
 
 EXPOSE 1154
 EXPOSE 1133
