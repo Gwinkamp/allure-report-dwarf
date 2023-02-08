@@ -4,15 +4,15 @@ import aiofiles
 from pathlib import Path
 from zipfile import ZipFile
 from models import Settings
-from services.storage import Storage
+from services import Storage
 
 
 class LocalStorage(Storage):
     """Класс, инкапсулирующий методы взаимодействия с Локальным хранилищем"""
 
     def __init__(self, settings: Settings, *args, **kwargs):
-        super().__init__(settings, *args, **kwargs)
-        self.storage_path = Path(self._settings.dirpath)
+        super().__init__(*args, **kwargs)
+        self.storage_path = settings.local_storage_dirpath
         self._create_storage_dir_if_doesnt_exist()
 
     async def save_results_package(self, package_name: str, data: bytes):

@@ -24,7 +24,7 @@ def override_storage(
         container: Container,
         settings: Settings = Provide[Container.settings]
 ):
-    storage_class = get_target_storage(settings.storage.type)
+    storage_class = get_target_storage(settings.storage_type)
 
     container.storage.override(
         providers.Factory(

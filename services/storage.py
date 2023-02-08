@@ -1,14 +1,15 @@
 import logging
+from io import BytesIO
 from pathlib import Path
 from models import Settings
+from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
 
 
 class Storage(metaclass=ABCMeta):
     """Класс, инкапсулирующий методы взаимодействия с ФХД"""
 
-    def __init__(self, settings: Settings, *args, **kwargs):
-        self._settings = settings.storage
+    def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
 
     @abstractmethod
@@ -28,3 +29,8 @@ class Storage(metaclass=ABCMeta):
         :return: признак того, что результаты были выгружены с ФХД
         """
         ...
+
+    @staticmethod
+    def _unzip_data(zipped_data: bytes, target_dir: str | Path):
+        with ZipFile(BytesIO(zipped_data)) as zf:
+            zf.extractall(target_dir)

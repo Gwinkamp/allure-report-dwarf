@@ -28,18 +28,30 @@ class AllureConfig(BaseModel):
     receiver: AllureReceiverConfig
 
 
-class StorageConfig(BaseModel):
-    type: StorageType
+class SeafileConfig(BaseModel):
     dirpath: str
-    url: str | None
-    username: str | None
-    password: str | None
-    repo_id: str | None
+    url: str
+    username: str
+    password: str
+    repo_id: str
+
+
+class MinioConfig(BaseModel):
+    endpoint: str
+    access_key: str
+    secret_key: str
+    secure: bool
+    region: str
+    bucket_name: str
+    dirpath: str
 
 
 class Settings(BaseSettings):
     allure: AllureConfig
-    storage: StorageConfig
+    storage_type: StorageType
+    seafile: SeafileConfig | None
+    minio: MinioConfig | None
+    local_storage_dirpath: Path = config.DEFAULT_LOCAL_STORAGE_DIRPATH
 
     def get_allure_path(self) -> str | Path:
         if not self.allure.allure_path:

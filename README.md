@@ -28,35 +28,62 @@ ALLURE__RECEIVER__PORT = 1133
 
 ## Хранилище результатов
 
-Реализовано хранение пакетов с результатами выполнения тестов на внешнем файловом хранилище данных (далее ФХД)
+### Локальное хранилище
 
 Если вы не хотите, чтобы данные сохранялись на ФХД, то укажите следующие переменные окружения:
 
 ```ini
-STORAGE__TYPE = local
-STORAGE__DIRPATH = /allure_backup
+STORAGE_TYPE = local
+LOCAL_STORAGE_DIRPATH = /allure_backup
 ```
 
-* `STORAGE__TYPE` - указывает на то, что в качестве ФХД будет использоваться локальная папка на ПК
-* `STORAGE__DIRPATH` - путь к папке, в которой будут храниться результаты
+* `STORAGE_TYPE` - указывает на то, что в качестве ФХД будет использоваться локальная папка на ПК
+* `LOCAL_STORAGE_DIRPATH` - путь к папке, в которой будут храниться результаты
 
-В данный момент пока есть поддержка только [seafile](https://www.seafile.com).  
+Реализовано хранение пакетов с результатами выполнения тестов на внешнем файловом хранилище данных (далее ФХД)  
+В данный момент пока есть поддержка [seafile](https://www.seafile.com) и [minio](https://min.io/).
+
+### Seafile
+
 Для интеграции с seafile просто укажете следующие переменные окружения:
 
 ```ini
-STORAGE__TYPE = seafile
-STORAGE__URL = http://localhost
-STORAGE__USERNAME = my@example.com
-STORAGE__PASSWORD = Test123456
-STORAGE__REPO_ID = 600cfdca-8b07-4ac7-93ef-c1c40220ed8b
-STORAGE__DIRPATH = /allure_backup
+STORAGE_TYPE = seafile
+SEAFILE__URL = http://localhost
+SEAFILE__USERNAME = my@example.com
+SEAFILE__PASSWORD = Test123456
+SEAFILE__REPO_ID = 600cfdca-8b07-4ac7-93ef-c1c40220ed8b
+SEAFILE__DIRPATH = /allure_backups
 ```
 
-* `STORAGE__TYPE` - указывает на то, что в качестве ФХД будет использоваться сервис seafile
-* `STORAGE__URL` - адрес сервиса seafile
-* `STORAGE__USERNAME` и `STORAGE__PASSWORD` - данные для доступа к seafile
-* `STORAGE__REPO_ID` - репозиторий seafile, в котором будут сохраняться результаты
-* `STORAGE__DIRPATH` - путь к папке внутри репозитория, в которой будут храниться результаты
+* `STORAGE_TYPE` - указывает на то, что в качестве ФХД будет использоваться сервис seafile
+* `SEAFILE__URL` - адрес сервиса seafile
+* `SEAFILE__USERNAME` и `SEAFILE__PASSWORD` - данные для доступа к seafile
+* `SEAFILE__REPO_ID` - репозиторий seafile, в котором будут сохраняться результаты
+* `SEAFILE__DIRPATH` - путь к папке внутри репозитория, в которой будут храниться результаты
+
+### MinIO
+
+Для интеграции с minio просто укажете следующие переменные окружения:
+
+```ini
+STORAGE_TYPE = minio
+MINIO__ENDPOINT = localhost:8080
+MINIO__ACCESS_KEY = access_key
+MINIO__SECRET_KEY = secret_key
+MINIO__SECURE = true
+MINIO__REGION = ru-central1
+MINIO__BUCKET_NAME = bucket_name
+MINIO__DIRPATH = allure_backups
+```
+
+* `STORAGE_TYPE` - указывает на то, что в качестве ФХД будет использоваться сервис minio
+* `MINIO__ENDPOINT` - адрес сервиса minio (указывается без схемы http/https)
+* `MINIO__ACCESS_KEY` и `MINIO__SECRET_KEY` - данные для доступа к minio
+* `MINIO__SECURE` - признак использования TLS
+* `MINIO__REGION` - регион авторизации minio
+* `MINIO__BUCKET_NAME` - наименование бакета, где будут храниться результаты 
+* `MINIO__DIRPATH` - путь к папке внутри бакета, в которой будут храниться результаты
 
 ## API для приема результатов
 
@@ -64,7 +91,7 @@ STORAGE__DIRPATH = /allure_backup
 
 Запрос на передачу пакета с результатами:
 
-```commandline
+```bash
 curl --request POST \
   --url http://{{receiverUrl}}/upload_results \
   --header 'Content-Type: multipart/form-data' \

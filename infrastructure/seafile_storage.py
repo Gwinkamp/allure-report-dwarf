@@ -1,6 +1,5 @@
 from io import BytesIO
 from pathlib import Path
-from zipfile import ZipFile
 from cachetools import Cache
 from models import Settings
 from services.storage import Storage
@@ -13,14 +12,17 @@ class SeafileStorage(Storage):
     DEFAULT_BASE_URL = 'http://localhost'
 
     def __init__(self, settings: Settings, cache: Cache, *args, **kwargs):
-        super().__init__(settings, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+        if not settings.seafile:
+            raise Exception('Не определена конфигурация для Seafile')
         self._cache = cache
-        base_url = self._settings.url or self.DEFAULT_BASE_URL
+        self._config = settings.seafile
+        base_url = self._config.url or self.DEFAULT_BASE_URL
         self._seafile = SeafileHttpClient(base_url)
 
     @property
     def repo_id(self) -> str | None:
-        return self._settings.repo_id or self._cache.get('repo_id', None)
+        return self._config.repo_id or self._cache.get('repo_id', None)
 
     @repo_id.setter
     def repo_id(self, value: str):
@@ -42,7 +44,7 @@ class SeafileStorage(Storage):
 
         response = await self._seafile.upload(
             repo_id=self.repo_id or await self._get_default_repo(),
-            dir_path=self._settings.dirpath,
+            dir_path=self._config.dirpath,
             filename=package_name,
             payload=buffer,
             token=self.token
@@ -79,7 +81,7 @@ class SeafileStorage(Storage):
         return True
 
     async def _obtain_token(self):
-        result = await self._seafile.obtain_auth_token(self._settings.username, self._settings.password)
+        result = await self._seafile.obtain_auth_token(self._config.username, self._config.password)
         if not result.success:
             raise Exception(
                 'Не удалось получить токен в сервисе seafile. '
@@ -104,7 +106,7 @@ class SeafileStorage(Storage):
     async def _get_all_packages(self):
         result = await self._seafile.get_files(
             repo_id=self.repo_id or await self._get_default_repo(),
-            path=self._settings.dirpath,
+            path=self._config.dirpath,
             token=self.token
         )
 
@@ -117,7 +119,7 @@ class SeafileStorage(Storage):
     async def _download_package(self, package: FileItem):
         result = await self._seafile.download(
             repo_id=self.repo_id or await self._get_default_repo(),
-            filepath=self._build_seafile_path(self._settings.dirpath, package.name),
+            filepath=self._build_seafile_path(self._config.dirpath, package.name),
             token=self.token
         )
 
@@ -126,11 +128,6 @@ class SeafileStorage(Storage):
             return
 
         return result.content
-
-    @staticmethod
-    def _unzip_data(zipped_data: bytes, target_dir: str | Path):
-        with ZipFile(BytesIO(zipped_data)) as zf:
-            zf.extractall(target_dir)
 
     @staticmethod
     def _create_error_message(result: SeaResult):
