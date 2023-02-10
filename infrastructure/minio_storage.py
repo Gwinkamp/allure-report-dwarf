@@ -57,6 +57,8 @@ class MinioStorage(Storage):
             except Exception as e:
                 self._logger.error(f'Не удалось распаковать пакет {package.name}. {e}')
 
+        return True
+
     def _get_all_packages(self):
         return self._minio.list_objects(
             bucket_name=self._config.bucket_name,
